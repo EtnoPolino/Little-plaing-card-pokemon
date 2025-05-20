@@ -1,6 +1,7 @@
 import { MonsterType } from "../utils/monster.utils";
 
 export class Monster {
+  id: number = -1;
   name: string = "My Monster";
   hp: number = 40;
   image: string =
@@ -11,4 +12,8 @@ export class Monster {
   attackStrength: number = 60;
   attackDescription: string =
     "This is a long description of a monster capacity. Probably something to do with plants.";
+
+  copy(): Monster {
+    return Object.assign(new Monster(), this);
+  }
 }
