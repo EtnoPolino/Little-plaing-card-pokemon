@@ -10,3 +10,7 @@
 @if (searchMonstersResponse().length > 0) {
 <div class="center">Found {{ searchMonstersResponse().length }} monsters !</div>
 }
+
+<div class="center">
+  <button (click)="addMonster()">Add generic Monster</button>
+</div>

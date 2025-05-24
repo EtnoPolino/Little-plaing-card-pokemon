@@ -26,12 +26,12 @@ import { MonsterService } from "./services/monster/monster.service";
   styleUrl: "./app.component.css",
 })
 export class AppComponent {
-  monsters!: Monster[];
+  monsters = model<Monster[]>([]); //un signal, je veux recalculer mes monstres.
   search = model(""); //un signal
   monsterService = inject(MonsterService);
 
   searchMonstersResponse = computed(() => {
-    const monsterFiltered = this.monsters.filter((monster) =>
+    const monsterFiltered = this.monsters().filter((monster) =>
       monster.name.toLowerCase().includes(this.search())
     );
     return monsterFiltered;
@@ -39,10 +39,16 @@ export class AppComponent {
 
   selectedMonsterIndex = signal(1);
   selectedMonster = computed(() => {
-    return this.monsters[this.selectedMonsterIndex()];
+    return this.monsters()[this.selectedMonsterIndex()];
   });
 
   constructor() {
-    this.monsters = this.monsterService.getAllMonsters();
+    this.monsters.set(this.monsterService.getAllMonsters());
+  }
+
+  addMonster() {
+    const genericMonster = new Monster();
+    this.monsterService.addMonster(genericMonster);
+    this.monsters.set(this.monsterService.getAllMonsters());
   }
 }
