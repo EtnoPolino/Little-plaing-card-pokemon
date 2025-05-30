@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, OnInit, signal } from "@angular/core";
+import { Component, computed, inject, OnDestroy, OnInit, signal } from "@angular/core";
 import {
 	FormBuilder,
 	FormControl,
@@ -11,11 +11,21 @@ import { Subscription } from "rxjs";
 import { MonsterType } from "../../utils/monster.utils";
 import { PlayingCardComponent } from "../../components/playing-card/playing-card.component";
 import { Monster } from "../../model/monster";
+import { MonsterService } from "../../services/monster/monster.service";
+import { MatButtonModule } from "@angular/material/button";
+import { MatInputModule } from "@angular/material/input";
+import { MatSelectModule } from "@angular/material/select";
 
 @Component({
 	selector: "app-monster",
 	standalone: true,
-	imports: [ReactiveFormsModule, PlayingCardComponent],
+	imports: [
+		ReactiveFormsModule,
+		PlayingCardComponent,
+		MatButtonModule,
+		MatInputModule,
+		MatSelectModule,
+	],
 	templateUrl: "./monster.component.html",
 	styleUrl: "./monster.component.css",
 })
@@ -23,6 +33,7 @@ export class MonsterComponent implements OnInit, OnDestroy {
 	private route = inject(ActivatedRoute);
 	private router = inject(Router);
 	private formBuilder = inject(FormBuilder);
+	private monsterService = inject(MonsterService);
 
 	/*name = new FormControl("", [Validators.required]);
   hp = new FormControl(0, [Validators.required, Validators.min(1), Validators.max(200)]);*/
@@ -37,7 +48,8 @@ export class MonsterComponent implements OnInit, OnDestroy {
 		attackDescription: ["", [Validators.required]],
 	});
 
-	monsterId = signal<number | undefined>(undefined);
+	monsterId = -1;
+
 	private routeSubscription: Subscription | null = null;
 	private formValueSubscription: Subscription | null = null;
 
@@ -49,8 +61,15 @@ export class MonsterComponent implements OnInit, OnDestroy {
 			this.monster = Object.assign(new Monster(), data);
 		});
 
-		this.route.params.subscribe((params) => {
-			this.monsterId.set(params["id"] ? parseInt(params["id"]) : undefined);
+		this.routeSubscription = this.route.params.subscribe((params) => {
+			if (params["id"]) {
+				this.monsterId = parseInt(params["id"]);
+				const monsterFound = this.monsterService.getById(this.monsterId);
+				if (monsterFound) {
+					this.monster = monsterFound;
+					this.pokemonFormGroup.patchValue(this.monster);
+				}
+			}
 		});
 	}
 
@@ -60,14 +79,21 @@ export class MonsterComponent implements OnInit, OnDestroy {
 	}
 
 	next() {
-		let nextId = this.monsterId() || 0;
+		let nextId = this.monsterId || 0;
 		nextId++;
 		this.router.navigate(["/monster/" + nextId]);
 	}
 
 	submit(event: Event) {
 		event.preventDefault();
-		console.log(this.pokemonFormGroup.value);
+		if (this.monsterId === -1) {
+			// si on cree un monstre, l'id aura encore sa valeur par défaut.
+			this.monsterService.addMonster(this.monster);
+		} else {
+			this.monster.id = this.monsterId;
+			this.monsterService.updateMonster(this.monster);
+		}
+		this.navigateBack();
 	}
 
 	isFieldValid(smthg: string) {
@@ -86,5 +112,9 @@ export class MonsterComponent implements OnInit, OnDestroy {
 				});
 			};
 		}
+	}
+
+	navigateBack() {
+		this.router.navigate(["/home"]);
 	}
 }

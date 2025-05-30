@@ -1,16 +1,16 @@
 <app-search-bar [(searchInput)]="search"></app-search-bar>
 
 <div id="card-list">
-  @for (monster of searchMonstersResponse(); track monster) {
-  <app-playing-card [monster]="monster"></app-playing-card>
-  }@empty {
-  <div class="center">No Monster found !</div>
-  }
+	@for (monster of searchMonstersResponse(); track monster) {
+	<app-playing-card [monster]="monster" (click)="openMonster(monster)"></app-playing-card>
+	}@empty {
+	<div class="center">No Monster found !</div>
+	}
 </div>
 @if (searchMonstersResponse().length > 0) {
 <div class="center">Found {{ searchMonstersResponse().length }} monsters !</div>
 }
 
 <div class="center">
-  <button (click)="addMonster()">Add generic Monster</button>
+	<button (click)="addMonster()">Add Monster</button>
 </div>
