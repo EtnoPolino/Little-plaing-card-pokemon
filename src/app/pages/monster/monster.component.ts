@@ -15,6 +15,8 @@ import { MonsterService } from "../../services/monster/monster.service";
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
+import { MatDialog } from "@angular/material/dialog";
+import { DeleteMonsterConfirmationDialogComponent } from "../../components/delete-monster-confirmation-dialog/delete-monster-confirmation-dialog.component";
 
 @Component({
 	selector: "app-monster",
@@ -34,6 +36,7 @@ export class MonsterComponent implements OnInit, OnDestroy {
 	private router = inject(Router);
 	private formBuilder = inject(FormBuilder);
 	private monsterService = inject(MonsterService);
+	private readonly dialog = inject(MatDialog);
 
 	/*name = new FormControl("", [Validators.required]);
   hp = new FormControl(0, [Validators.required, Validators.min(1), Validators.max(200)]);*/
@@ -116,5 +119,15 @@ export class MonsterComponent implements OnInit, OnDestroy {
 
 	navigateBack() {
 		this.router.navigate(["/home"]);
+	}
+
+	deleteMonster() {
+		const dialogRef = this.dialog.open(DeleteMonsterConfirmationDialogComponent);
+		dialogRef.afterClosed().subscribe((comfirmation) => {
+			if (comfirmation) {
+				this.monsterService.deleteMonster(this.monsterId);
+				this.navigateBack();
+			}
+		});
 	}
 }
