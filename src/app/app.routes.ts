@@ -3,12 +3,14 @@ import { MonsterListComponent } from "./pages/monster-list/monster-list.componen
 import { MonsterComponent } from "./pages/monster/monster.component";
 import { NotFoundComponent } from "./pages/not-found/not-found.component";
 import { LoginComponent } from "./pages/login/login.component";
+import { isLoggedInGuard } from "./guards/is-logged-in.guard";
 
 export const routes: Routes = [
 	{ path: "", redirectTo: "home", pathMatch: "full" },
 	{
 		path: "home",
 		component: MonsterListComponent,
+		canActivate: [isLoggedInGuard],
 	},
 	{
 		path: "login",
@@ -20,10 +22,12 @@ export const routes: Routes = [
 			{
 				path: "",
 				component: MonsterComponent,
+				canActivate: [isLoggedInGuard],
 			},
 			{
 				path: ":id",
 				component: MonsterComponent,
+				canActivate: [isLoggedInGuard],
 			},
 		],
 	},
