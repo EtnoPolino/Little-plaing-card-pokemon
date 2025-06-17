@@ -7,7 +7,7 @@ import {
 	Validators,
 } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
-import { Subscription } from "rxjs";
+import { filter, of, Subscription, switchMap } from "rxjs";
 import { MonsterType } from "../../utils/monster.utils";
 import { PlayingCardComponent } from "../../components/playing-card/playing-card.component";
 import { Monster } from "../../model/monster";
@@ -53,32 +53,41 @@ export class MonsterComponent implements OnInit, OnDestroy {
 
 	monsterId = -1;
 
-	private routeSubscription: Subscription | null = null;
-	private formValueSubscription: Subscription | null = null;
+	private subscriptions: Subscription = new Subscription();
 
 	monster: Monster = Object.assign(new Monster(), this.pokemonFormGroup.value);
 	monsterTypes = Object.values(MonsterType);
 
 	ngOnInit(): void {
-		this.formValueSubscription = this.pokemonFormGroup.valueChanges.subscribe((data) => {
+		//A chaque changement d'une valeur de notre formGroup il faut que cela se reflete dans notre object monster
+		const formValueSubscription = this.pokemonFormGroup.valueChanges.subscribe((data) => {
 			this.monster = Object.assign(new Monster(), data);
 		});
+		this.subscriptions.add(formValueSubscription);
 
-		this.routeSubscription = this.route.params.subscribe((params) => {
-			if (params["id"]) {
-				this.monsterId = parseInt(params["id"]);
-				const monsterFound = this.monsterService.getById(this.monsterId);
+		const routeSubscription = this.route.params
+			.pipe(
+				switchMap((params) => {
+					//switchMap prend un observable pour retourner un observable
+					if (params["id"]) {
+						this.monsterId = parseInt(params["id"]);
+						return this.monsterService.getById(this.monsterId);
+					}
+					return of(null);
+				})
+			)
+			.subscribe((monsterFound) => {
 				if (monsterFound) {
 					this.monster = monsterFound;
 					this.pokemonFormGroup.patchValue(this.monster);
 				}
-			}
-		});
-	}
+			});
+
+		this.subscriptions.add(routeSubscription);
+	} // fin ng
 
 	ngOnDestroy(): void {
-		this.routeSubscription?.unsubscribe();
-		this.formValueSubscription?.unsubscribe();
+		this.subscriptions?.unsubscribe();
 	}
 
 	next() {
@@ -89,14 +98,19 @@ export class MonsterComponent implements OnInit, OnDestroy {
 
 	submit(event: Event) {
 		event.preventDefault();
+		let saveObservable = null;
 		if (this.monsterId === -1) {
 			// si on cree un monstre, l'id aura encore sa valeur par défaut.
-			this.monsterService.addMonster(this.monster);
+			saveObservable = this.monsterService.addMonster(this.monster);
 		} else {
 			this.monster.id = this.monsterId;
-			this.monsterService.updateMonster(this.monster);
+			saveObservable = this.monsterService.updateMonster(this.monster);
 		}
-		this.navigateBack();
+		const saveSubscription = saveObservable.subscribe((_) => {
+			this.navigateBack();
+		});
+
+		this.subscriptions.add(saveSubscription);
 	}
 
 	isFieldValid(smthg: string) {
@@ -123,11 +137,14 @@ export class MonsterComponent implements OnInit, OnDestroy {
 
 	deleteMonster() {
 		const dialogRef = this.dialog.open(DeleteMonsterConfirmationDialogComponent);
-		dialogRef.afterClosed().subscribe((comfirmation) => {
-			if (comfirmation) {
-				this.monsterService.deleteMonster(this.monsterId);
+		dialogRef
+			.afterClosed()
+			.pipe(
+				filter((confirmation) => confirmation),
+				switchMap((_) => this.monsterService.deleteMonster(this.monsterId))
+			)
+			.subscribe((comfirmation) => {
 				this.navigateBack();
-			}
-		});
+			});
 	}
 }

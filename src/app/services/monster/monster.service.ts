@@ -1,14 +1,17 @@
-import { Injectable } from "@angular/core";
+import { inject, Injectable } from "@angular/core";
 import { Monster } from "../../model/monster";
-import { MonsterType } from "../../utils/monster.utils";
+import { HttpClient } from "@angular/common/http";
+import { IMonster } from "../../interfaces/monster.interface";
+import { map, Observable } from "rxjs";
 
 @Injectable({
-  providedIn: "root",
+	providedIn: "root",
 })
 export class MonsterService {
+	/*
   monsters: Monster[] = [];
   currentIndex: number = 1;
-
+  
   constructor() {
     this.loadData();
   }
@@ -111,5 +114,39 @@ export class MonsterService {
       this.monsters.splice(monsterIndex, 1);
     }
     this.save();
-  }
+  }*/
+
+	//---------------------------- UTILISATION D'UNE API ----------------------
+	private http = inject(HttpClient);
+	private BASE_URL = "http://localhost:8080/monsters/";
+
+	getAllMonsters(): Observable<Monster[]> {
+		return this.http.get<IMonster[]>(this.BASE_URL).pipe(
+			map((monsterDicArray) => {
+				return monsterDicArray.map<Monster>((monsterDict) => Monster.fromJson(monsterDict));
+			})
+		);
+	}
+
+	getById(id: number): Observable<Monster> {
+		return this.http
+			.get<IMonster>(this.BASE_URL + id + "/")
+			.pipe(map((monsterDict) => Monster.fromJson(monsterDict)));
+	}
+
+	addMonster(monster: Monster): Observable<Monster> {
+		return this.http
+			.post<IMonster>(this.BASE_URL, monster.toJson())
+			.pipe(map((monsterDict) => Monster.fromJson(monsterDict)));
+	}
+
+	updateMonster(monster: Monster): Observable<Monster> {
+		return this.http
+			.put<IMonster>(this.BASE_URL + monster.id + "/", monster.toJson())
+			.pipe(map((monsterDict) => Monster.fromJson(monsterDict)));
+	}
+
+	deleteMonster(id: number): Observable<void> {
+		return this.http.delete<void>(this.BASE_URL + id + "/");
+	}
 }
